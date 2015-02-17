@@ -172,7 +172,7 @@ cluster(InputIterator first, InputIterator last, double R)
   
   #ifdef __cluster_time
   tm.stop();
-  std::cout << "Clustering time: " << tm.duration() << " ms" << std::endl;
+  std::cout << "Clustering time: " << tm.duration() << " ms\n" << std::endl;
   #endif
 
   return jets;
