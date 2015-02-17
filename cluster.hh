@@ -1,10 +1,11 @@
 #include <iostream>
 #include <iomanip>
-#include <vector>
-#include <set>
-#include <map>
 #include <list>
 #include <cmath>
+
+#ifdef __cluster_time
+#include "Timer.h"
+#endif
 
 namespace clustering {
 
@@ -51,10 +52,8 @@ struct p4 {
 
   // distance between two particles
   inline double dij(const p4<alg>& p) const {
-    double deltaPhi = phi-p.phi;
-    if (deltaPhi >  M_PI) deltaPhi = 2*M_PI - deltaPhi;
-    if (deltaPhi < -M_PI) deltaPhi = 2*M_PI + deltaPhi;
-
+    double deltaPhi = std::fabs(phi-p.phi);
+    if (deltaPhi > M_PI) deltaPhi = 2*M_PI - deltaPhi;
     return std::min(d,p.d) * ( sq(rap-p.rap) + sq(deltaPhi) );
   }
 
@@ -66,20 +65,6 @@ private:
   static int num;
 };
 template<algorithm alg> int p4<alg>::num = 0;
-
-template<algorithm alg>
-struct p4_pair: public std::pair< p4<alg>*, p4<alg>* > {
-  typedef p4<alg> p4_t;
-  typedef std::pair<p4_t*,p4_t*> base;
-  p4_pair(const p4_t* a, const p4_t* b): base(a,b) {
-    if (base::first->id > base::second->id)
-      std::swap(base::first,base::second);
-  }
-  p4_pair(const base& other): base(other) {
-    if (base::first->id > base::second->id)
-      std::swap(base::first,base::second);
-  }
-};
 
 template<class Container>
 class sorted: public Container {
@@ -104,6 +89,11 @@ cluster(InputIterator first, InputIterator last, double R)
   typedef typename InputIterator::value_type in_type;
   // internal list iterator type
   typedef typename std::list< p4<alg> >::iterator iter_t;
+  
+  #ifdef __cluster_time
+  Timer tm;
+  tm.start();
+  #endif
 
   // collect initial particles into a list
   // sorted by distance to the beam
@@ -112,16 +102,10 @@ cluster(InputIterator first, InputIterator last, double R)
     particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it)));
 
   #ifdef __cluster_debug
-    for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
-      std::cout << it->id << ": " << it->d << std::endl;
-    std::cout << std::endl;
+  for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
+    std::cout << it->id << ": " << it->d << std::endl;
+  std::cout << std::endl;
   #endif
-
-  // map for caching pairwise distances
-  std::map< p4_pair<alg>, double > dij;
-  for (iter_t it=particles.begin(), endi=(--particles.end()); it!=endi; ++it)
-    for (iter_t jt=next(it), endj=particles.end(); jt!=endj; ++jt)
-      dij[std::make_pair( &(*it), &(*jt) )] = it->dij(*jt);
 
   // output list of jets with constituents
   std::list<in_type> jets;
@@ -138,7 +122,7 @@ cluster(InputIterator first, InputIterator last, double R)
     // find closest pair
     for (; it!=end; ++it) {
       for (iter_t jt=next(it); jt!=end; ++jt) {
-        double d = dij[std::make_pair( &(*it), &(*jt) )];
+        double d = it->dij(*jt);
         if (d < _dist) {
           _dist = d;
           it1 = it;
@@ -150,25 +134,22 @@ cluster(InputIterator first, InputIterator last, double R)
 
     if (merged) {
       // merge particles
-      iter_t p = particles.insert( *it1 + *it2 );
+      #ifdef __cluster_debug
+      iter_t p =
+      #endif
+      particles.insert( *it1 + *it2 );
 
       // print clustering step
       #ifdef __cluster_debug
-        std::cout << std::setw(3) << p->id << ": merged "
-                  << std::setw(3) << it1->id << " & "
-                  << std::setw(3) << it2->id
-                  << " | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << p->id << ": merged "
+                << std::setw(3) << it1->id << " & "
+                << std::setw(3) << it2->id
+                << " | d = " << _dist << std::endl;
       #endif
 
       // remove merged particles from set
       particles.erase(it1);
       particles.erase(it2);
-
-      // precompute distances
-      for (iter_t jt=particles.begin(), end=particles.end(); jt!=end; ++jt) {
-        if (jt==p) continue;
-        dij[std::make_pair( &(*jt), &(*p) )] = p->dij(*jt);
-      }
 
     } else {
       // identify as jet
@@ -176,8 +157,8 @@ cluster(InputIterator first, InputIterator last, double R)
 
       // print clustering step
       #ifdef __cluster_debug
-        std::cout << std::setw(3) << begin->id
-                  << " is a Jet | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << begin->id
+                << " is a Jet | d = " << _dist << std::endl;
       #endif
 
       // remove from particles set
@@ -186,7 +167,12 @@ cluster(InputIterator first, InputIterator last, double R)
   } // end while
 
   #ifdef __cluster_debug
-    std::cout << std::endl;
+  std::cout << std::endl;
+  #endif
+  
+  #ifdef __cluster_time
+  tm.stop();
+  std::cout << "Clustering time: " << tm.duration() << " ms" << std::endl;
   #endif
 
   return jets;
