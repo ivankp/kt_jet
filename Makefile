@@ -1,5 +1,8 @@
 CC := g++
-CCFLAGS := -Wall -O2
+CFLAGS := -Wall -O2
+
+ROOT_CFLAGS := $(shell root-config --cflags)
+ROOT_LIBS := $(shell root-config --libs)
 
 .PHONY: all clean
 
@@ -7,14 +10,11 @@ EXE := test
 
 all: $(EXE)
 
-$(EXE): %: %.cc
-	$(CC) $(CCFLAGS) $^ -o $@
+test: %: %.cc
+	$(CC) $(CFLAGS) $(ROOT_CFLAGS) $(filter %.cc,$^) -o $@ $(ROOT_LIBS)
 	
-%.o: %.cc %.hh
-	$(CC) $(CCFLAGS) -c $(filter %.cc,$^) -o $@
-	
-test: cluster.o
+test: cluster.hh
 
 clean:
-	rm -f $(EXE) *.o
+	rm -f $(EXE) $(wildcard *.o)
 
