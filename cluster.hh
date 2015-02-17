@@ -109,17 +109,14 @@ cluster(InputIterator first, InputIterator last, double R,
   // collect initial particles into a list
   // sorted by distance to the beam
   sorted< std::list< p4<alg> > > particles;
-  for (InputIterator it=first; it!=last; ++it) {
-    // std::cout <<
-    particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it))); //->d
-    // << std::endl;
-  }
+  for (InputIterator it=first; it!=last; ++it)
+    particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it)));
 
-  // if (print_steps) {
-  //   for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
-  //     std::cout << it->id << ": " << it->d << std::endl;
-  //   std::cout << std::endl;
-  // }
+  if (print_steps) {
+    for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
+      std::cout << it->id << ": " << it->d << std::endl;
+    std::cout << std::endl;
+  }
 
   // map for cashing pairwise distances
   std::map< p4_pair<alg>, double > dij;

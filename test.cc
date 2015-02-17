@@ -26,7 +26,7 @@ int main()
   list<TLorentzVector> particles;
   while ( cin >> particles );
 
-  list<TLorentzVector> jets = clustering::cluster<clustering::kt_alg>(
+  list<TLorentzVector> jets = clustering::cluster<clustering::antikt_alg>(
     particles.begin(),particles.end(),0.6);
 
   for (list<TLorentzVector>::iterator it=jets.begin(),
