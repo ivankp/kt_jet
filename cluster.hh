@@ -73,11 +73,6 @@ cluster(const InputContainer& pp, double R)
   typedef typename InputContainer::value_type pp_type;
   typedef typename InputContainer::const_iterator pp_iter;
   
-  #ifdef __cluster_time
-  Timer tm;
-  tm.start();
-  #endif
-  
   const size_t n = pp.size();
   size_t n_ok = n;
   p4<alg> particles[n]; // particles
