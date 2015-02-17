@@ -98,8 +98,7 @@ public:
 // ******************************************************************
 template<algorithm alg, class InputIterator>
 std::list<typename InputIterator::value_type>
-cluster(InputIterator first, InputIterator last, double R,
-        bool print_steps=false)
+cluster(InputIterator first, InputIterator last, double R)
 {
   // input particle type
   typedef typename InputIterator::value_type in_type;
@@ -112,13 +111,13 @@ cluster(InputIterator first, InputIterator last, double R,
   for (InputIterator it=first; it!=last; ++it)
     particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it)));
 
-  if (print_steps) {
+  #ifdef __cluster_debug
     for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
       std::cout << it->id << ": " << it->d << std::endl;
     std::cout << std::endl;
-  }
+  #endif
 
-  // map for cashing pairwise distances
+  // map for caching pairwise distances
   std::map< p4_pair<alg>, double > dij;
   for (iter_t it=particles.begin(), endi=(--particles.end()); it!=endi; ++it)
     for (iter_t jt=next(it), endj=particles.end(); jt!=endj; ++jt)
@@ -154,11 +153,12 @@ cluster(InputIterator first, InputIterator last, double R,
       iter_t p = particles.insert( *it1 + *it2 );
 
       // print clustering step
-      if (print_steps)
+      #ifdef __cluster_debug
         std::cout << std::setw(3) << p->id << ": merged "
                   << std::setw(3) << it1->id << " & "
                   << std::setw(3) << it2->id
                   << " | d = " << _dist << std::endl;
+      #endif
 
       // remove merged particles from set
       particles.erase(it1);
@@ -175,14 +175,19 @@ cluster(InputIterator first, InputIterator last, double R,
       jets.push_back( in_type(begin->px,begin->py,begin->pz,begin->E) );
 
       // print clustering step
-      if (print_steps)
+      #ifdef __cluster_debug
         std::cout << std::setw(3) << begin->id
                   << " is a Jet | d = " << _dist << std::endl;
+      #endif
 
       // remove from particles set
       particles.erase(begin);
     }
   } // end while
+
+  #ifdef __cluster_debug
+    std::cout << std::endl;
+  #endif
 
   return jets;
 }
