@@ -70,7 +70,8 @@ std::vector<typename InputContainer::value_type>
 cluster(const InputContainer& pp, double R)
 {
   // input particle type
-  typedef typename InputContainer::value_type in_type;
+  typedef typename InputContainer::value_type pp_type;
+  typedef typename InputContainer::const_iterator pp_iter;
   
   #ifdef __cluster_time
   Timer tm;
@@ -84,9 +85,7 @@ cluster(const InputContainer& pp, double R)
   double dij[n][n];     // cache of pairwise distances
   
   // read input particles
-  for (typename InputContainer::const_iterator it=pp.begin(),
-       end=pp.end(); it!=end; ++it)
-  {
+  for (pp_iter it=pp.begin(), end=pp.end(); it!=end; ++it) {
     static size_t i=0;
     particles[i] = p4<alg>( __px(*it),__py(*it),__pz(*it),__E(*it) );
     ok[i] = true;
@@ -105,7 +104,7 @@ cluster(const InputContainer& pp, double R)
   #endif
   
   // output list of jets with constituents
-  std::vector<in_type> jets;
+  std::vector<pp_type> jets;
   jets.reserve(n/10+1);
 
   // perform clustering iterations until no more particles left
@@ -171,7 +170,7 @@ cluster(const InputContainer& pp, double R)
       const p4<alg>& p = particles[i1];
     
       // identify as jet
-      jets.push_back( in_type( p.px, p.py, p.pz, p.E ) );
+      jets.push_back( pp_type( p.px, p.py, p.pz, p.E ) );
 
       // print clustering step
       #ifdef __cluster_debug
