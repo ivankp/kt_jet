@@ -24,11 +24,12 @@ int main()
 {
   list<TLorentzVector> particles;
   while ( cin >> particles );
-  
-  list<TLorentzVector> jets = clustering::cluster<clustering::antikt_alg>(particles,0.6);
-  
-  for (list<TLorentzVector>::iterator it=jets.begin(), end=jets.end(); it!=end; ++it)
-    cout << it->Pt();
+
+  list<TLorentzVector> jets
+    = clustering::cluster<clustering::antikt_alg>(particles,0.6);
+
+  for (list<TLorentzVector>::iterator it=jets.begin(),
+       end=jets.end(); it!=end; ++it) cout << it->Pt() << endl;
 
   return 0;
 }
