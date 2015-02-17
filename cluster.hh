@@ -106,7 +106,7 @@ cluster(const InputContainer& pp, double R)
   
   // output list of jets with constituents
   std::vector<in_type> jets;
-  jets.reserve(n/5+1);
+  jets.reserve(n/10+1);
 
   // perform clustering iterations until no more particles left
   while (n_ok) {

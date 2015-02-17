@@ -23,21 +23,12 @@ typedef vector<fjcore::PseudoJet>::const_iterator iter_t;
 int main()
 {
   const double R = 0.6;
+  
+  // Read input
+  // ****************************************************************
 
   vector<fjcore::PseudoJet> particles;
   while ( cin >> particles );
-
-  // FastJet
-  // ****************************************************************
-  
-  Timer fj_tm;
-  fj_tm.start();
-  
-  fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, R);
-  fjcore::ClusterSequence seq(particles, jet_def);
-  const vector<fjcore::PseudoJet> fj_jets = fjcore::sorted_by_pt( seq.inclusive_jets() );
-  
-  fj_tm.stop();
   
   // pgJet
   // ****************************************************************
@@ -50,6 +41,18 @@ int main()
   );
     
   pg_tm.stop();
+
+  // FastJet
+  // ****************************************************************
+  
+  Timer fj_tm;
+  fj_tm.start();
+  
+  fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, R);
+  fjcore::ClusterSequence seq(particles, jet_def);
+  const vector<fjcore::PseudoJet> fj_jets = fjcore::sorted_by_pt( seq.inclusive_jets() );
+  
+  fj_tm.stop();
   
   // Compare
   // ****************************************************************
