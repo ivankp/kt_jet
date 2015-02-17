@@ -13,7 +13,7 @@ all: $(EXE)
 test: %: %.cc
 	$(CC) $(CFLAGS) $(ROOT_CFLAGS) $(filter %.cc,$^) -o $@ $(ROOT_LIBS)
 
-test: cluster.hh
+test: cluster.hh Timer.h
 
 clean:
 	rm -f $(EXE) $(wildcard *.o)

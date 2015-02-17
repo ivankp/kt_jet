@@ -4,6 +4,7 @@
 #include <TLorentzVector.h>
 
 // #define __cluster_debug
+#define __cluster_time
 #include "cluster.hh"
 
 using namespace std;

@@ -1,10 +1,12 @@
 #include <iostream>
 #include <iomanip>
-#include <vector>
-#include <set>
 #include <map>
 #include <list>
 #include <cmath>
+
+#ifdef __cluster_time
+#include "Timer.h"
+#endif
 
 namespace clustering {
 
@@ -104,6 +106,11 @@ cluster(InputIterator first, InputIterator last, double R)
   typedef typename InputIterator::value_type in_type;
   // internal list iterator type
   typedef typename std::list< p4<alg> >::iterator iter_t;
+  
+  #ifdef __cluster_time
+  Timer tm;
+  tm.start();
+  #endif
 
   // collect initial particles into a list
   // sorted by distance to the beam
@@ -112,9 +119,9 @@ cluster(InputIterator first, InputIterator last, double R)
     particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it)));
 
   #ifdef __cluster_debug
-    for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
-      std::cout << it->id << ": " << it->d << std::endl;
-    std::cout << std::endl;
+  for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
+    std::cout << it->id << ": " << it->d << std::endl;
+  std::cout << std::endl;
   #endif
 
   // map for caching pairwise distances
@@ -154,10 +161,10 @@ cluster(InputIterator first, InputIterator last, double R)
 
       // print clustering step
       #ifdef __cluster_debug
-        std::cout << std::setw(3) << p->id << ": merged "
-                  << std::setw(3) << it1->id << " & "
-                  << std::setw(3) << it2->id
-                  << " | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << p->id << ": merged "
+                << std::setw(3) << it1->id << " & "
+                << std::setw(3) << it2->id
+                << " | d = " << _dist << std::endl;
       #endif
 
       // remove merged particles from set
@@ -176,8 +183,8 @@ cluster(InputIterator first, InputIterator last, double R)
 
       // print clustering step
       #ifdef __cluster_debug
-        std::cout << std::setw(3) << begin->id
-                  << " is a Jet | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << begin->id
+                << " is a Jet | d = " << _dist << std::endl;
       #endif
 
       // remove from particles set
@@ -186,7 +193,12 @@ cluster(InputIterator first, InputIterator last, double R)
   } // end while
 
   #ifdef __cluster_debug
-    std::cout << std::endl;
+  std::cout << std::endl;
+  #endif
+  
+  #ifdef __cluster_time
+  tm.stop();
+  std::cout << "Clustering time: " << tm.duration() << " ms\n" << std::endl;
   #endif
 
   return jets;
