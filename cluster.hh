@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <list>
 #include <cmath>
+#include <limits>
 
 #ifdef __cluster_time
 #include "Timer.h"
@@ -39,6 +40,7 @@ struct p4 {
   double px, py, pz, E, d, rap, phi;
   int id;
 
+  p4() { }
   p4(double px, double py, double pz, double E)
   : px(px), py(py), pz(pz), E(E),
     d( alg==kt_alg ? pt2() : 1./pt2() ),
@@ -66,104 +68,127 @@ private:
 };
 template<algorithm alg> int p4<alg>::num = 0;
 
-template<class Container>
-class sorted: public Container {
-public:
-  typedef typename Container::iterator   iterator;
-  typedef typename Container::value_type value_type;
-  sorted(): Container() { }
-  iterator insert(const value_type& val) {
-    return Container::insert(
-      std::lower_bound(Container::begin(), Container::end(), val),
-      val);
-  }
-};
-
 // clustering function
 // ******************************************************************
-template<algorithm alg, class InputIterator>
-std::list<typename InputIterator::value_type>
-cluster(InputIterator first, InputIterator last, double R)
+template<algorithm alg, class InputContainer>
+std::list<typename InputContainer::value_type>
+cluster(const InputContainer& pp, double R)
 {
   // input particle type
-  typedef typename InputIterator::value_type in_type;
-  // internal list iterator type
-  typedef typename std::list< p4<alg> >::iterator iter_t;
+  typedef typename InputContainer::value_type in_type;
   
   #ifdef __cluster_time
   Timer tm;
   tm.start();
   #endif
-
-  // collect initial particles into a list
-  // sorted by distance to the beam
-  sorted< std::list< p4<alg> > > particles;
-  for (InputIterator it=first; it!=last; ++it)
-    particles.insert(p4<alg>(__px(*it),__py(*it),__pz(*it),__E(*it)));
+  
+  const size_t n = pp.size();
+  size_t n_ok = n;
+  p4<alg> particles[n]; // particles
+  bool ok[n];           // particle exists
+  double dij[n][n];     // cache of pairwise distances
+  
+  // read input particles
+  for (typename InputContainer::const_iterator it=pp.begin(),
+       end=pp.end(); it!=end; ++it)
+  {
+    static size_t i=0;
+    particles[i] = p4<alg>( __px(*it),__py(*it),__pz(*it),__E(*it) );
+    ok[i] = true;
+    ++i;
+  }
+  
+  // cache pairwise distances
+  for (size_t i=0, ni=n-1; i<ni; ++i)
+    for (size_t j=i+1; j<n; ++j)
+      dij[i][j] = particles[i].dij( particles[j] );
 
   #ifdef __cluster_debug
-  for (iter_t it=particles.begin(), end=particles.end(); it!=end; ++it)
-    std::cout << it->id << ": " << it->d << std::endl;
+  for (size_t i=0; i<n; ++i)
+    std::cout << particles[i].id << ": " << particles[i].d << std::endl;
   std::cout << std::endl;
   #endif
-
+  
   // output list of jets with constituents
   std::list<in_type> jets;
 
   // perform clustering iterations until no more particles left
-  while (particles.size()) {
-    iter_t begin = particles.begin();
-    iter_t end   = particles.end();
-    iter_t it = begin, it1 = end, it2 = end;
+  while (n_ok) {
+    static size_t i1, i2;
 
-    double _dist = it->d*R*R;
+    double dist = std::numeric_limits<double>::max();
     bool merged = false;
+    
+    // find smallest single distance
+    for (size_t i=0; i<n; ++i) {
+      if (!ok[i]) continue;
+      double d = particles[i].d*R*R;
+      if (d < dist) {
+        dist = d;
+        i1 = i;
+      }
+    }
 
     // find closest pair
-    for (; it!=end; ++it) {
-      for (iter_t jt=next(it); jt!=end; ++jt) {
-        double d = it->dij(*jt);
-        if (d < _dist) {
-          _dist = d;
-          it1 = it;
-          it2 = jt;
+    for (size_t i=0, ni=n-1; i<ni; ++i) {
+      if (!ok[i]) continue;
+      for (size_t j=i+1; j<n; ++j) {
+        if (!ok[j]) continue;
+        
+        double d = dij[i][j];
+        if (d < dist) {
+          dist = d;
+          i1 = i;
+          i2 = j;
           if (!merged) merged = true;
         }
       }
     }
-
+    
     if (merged) {
       // merge particles
-      #ifdef __cluster_debug
-      iter_t p =
-      #endif
-      particles.insert( *it1 + *it2 );
-
+      p4<alg> p( particles[i1] + particles[i2] );
+      
       // print clustering step
       #ifdef __cluster_debug
-      std::cout << std::setw(3) << p->id << ": merged "
-                << std::setw(3) << it1->id << " & "
-                << std::setw(3) << it2->id
-                << " | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << p.id << ": merged "
+                << std::setw(3) << particles[i1].id << " & "
+                << std::setw(3) << particles[i2].id
+                << " | d = " << dist << std::endl;
       #endif
 
-      // remove merged particles from set
-      particles.erase(it1);
-      particles.erase(it2);
+      // "remove" merged particles
+      particles[i1] = p;
+      ok[i2] = false;
+      
+      // cache new pairwise distances
+      for (size_t i=0; i<i1; ++i) {
+        if (!ok[i]) continue;
+        dij[i][i1] = particles[i].dij( particles[i1] );
+      }
+      for (size_t i=i1+1; i<n; ++i) {
+        if (!ok[i]) continue;
+        dij[i1][i] = particles[i].dij( particles[i1] );
+      }
 
     } else {
       // identify as jet
-      jets.push_back( in_type(begin->px,begin->py,begin->pz,begin->E) );
+      jets.push_back( in_type(
+        particles[i1].px, particles[i1].py,
+        particles[i1].pz, particles[i1].E
+      ) );
 
       // print clustering step
       #ifdef __cluster_debug
-      std::cout << std::setw(3) << begin->id
-                << " is a Jet | d = " << _dist << std::endl;
+      std::cout << std::setw(3) << particles[i1].id
+                << " is a Jet | d = " << dist << std::endl;
       #endif
 
-      // remove from particles set
-      particles.erase(begin);
+      // "remove"
+      ok[i1] = false;
     }
+    
+    --n_ok;
   } // end while
 
   #ifdef __cluster_debug
