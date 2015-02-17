@@ -1,9 +1,6 @@
 CC := g++
 CFLAGS := -Wall -O3
 
-ROOT_CFLAGS := $(shell root-config --cflags)
-ROOT_LIBS := $(shell root-config --libs)
-
 .PHONY: all clean
 
 EXE := test
@@ -11,9 +8,12 @@ EXE := test
 all: $(EXE)
 
 test: %: %.cc
-	$(CC) $(CFLAGS) $(ROOT_CFLAGS) $(filter %.cc,$^) -o $@ $(ROOT_LIBS)
+	$(CC) $(CFLAGS) $(filter %.cc,$^) $(filter %.o,$^) -o $@
 
-test: cluster.hh Timer.h
+fjcore.o: %.o: fjcore.cc fjcore.hh
+	$(CC) $(CFLAGS) -c $(filter %.cc,$^) -o $@
+
+test: cluster.hh Timer.h fjcore.o
 
 clean:
 	rm -f $(EXE) $(wildcard *.o)

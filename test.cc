@@ -1,38 +1,88 @@
 #include <iostream>
-#include <list>
+#include <iomanip>
+#include <vector>
+#include <cmath>
 
-#include <TLorentzVector.h>
+#include "fjcore.hh"
+#include "Timer.h"
 
 // #define __cluster_debug
-#define __cluster_time
 #include "cluster.hh"
 
 using namespace std;
 
-istream& operator>>(istream &in, list<TLorentzVector>& p) {
+istream& operator>>(istream &in, vector<fjcore::PseudoJet>& p) {
   static double px, py, pz, E;
   in >> px >> py >> pz >> E;
-  if (in) p.push_back(TLorentzVector(px,py,pz,E));
+  if (in) p.push_back(fjcore::PseudoJet(px,py,pz,E));
   return in;
 }
 
-namespace clustering {
-  template<> inline double __px (const TLorentzVector& p) { return p.Px(); }
-  template<> inline double __py (const TLorentzVector& p) { return p.Py(); }
-  template<> inline double __pz (const TLorentzVector& p) { return p.Pz(); }
-  template<> inline double __E  (const TLorentzVector& p) { return p.E (); }
-}
+typedef vector<fjcore::PseudoJet>::const_iterator iter_t;
 
 int main()
 {
-  list<TLorentzVector> particles;
+  const double R = 0.6;
+
+  vector<fjcore::PseudoJet> particles;
   while ( cin >> particles );
 
-  list<TLorentzVector> jets =
-    clustering::cluster<clustering::antikt_alg>(particles,0.6);
+  // FastJet
+  // ****************************************************************
+  
+  Timer fj_tm;
+  fj_tm.start();
+  
+  fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, R);
+  fjcore::ClusterSequence seq(particles, jet_def);
+  const vector<fjcore::PseudoJet> fj_jets = fjcore::sorted_by_pt( seq.inclusive_jets() );
+  
+  fj_tm.stop();
+  
+  // pgJet
+  // ****************************************************************
 
-  for (list<TLorentzVector>::iterator it=jets.begin(),
-       end=jets.end(); it!=end; ++it) cout << it->Pt() << endl;
+  Timer pg_tm;
+  pg_tm.start();
+  
+  const vector<fjcore::PseudoJet> pg_jets = fjcore::sorted_by_pt(
+    clustering::cluster<clustering::antikt_alg>(particles, R)
+  );
+    
+  pg_tm.stop();
+  
+  // Compare
+  // ****************************************************************
+
+  const size_t nfj = fj_jets.size(), npg = pg_jets.size();
+  bool ok = (nfj==npg);
+  
+  if (ok) {
+    for (size_t i=0;i<nfj;++i)
+      if ( fj_jets[i].pt() != pg_jets[i].pt() ) {
+        ok = false;
+        break;
+      }
+  }
+  
+  if (!ok) {
+    cout << fixed << setprecision(8);
+    for (size_t i=0,n=max(nfj,npg);i<n;++i) {
+      cout << setw(12);
+      if (i<nfj) cout << fj_jets[i].pt();
+      else cout << ' ';
+      cout << setw(12);
+      if (i<npg) cout << pg_jets[i].pt();
+      else cout << ' ';
+      cout << endl;
+    }
+    cout << endl;
+  } else {
+    cout << "Complete agreement" << endl;
+  }
+
+  cout << "pg: " << pg_tm.duration() << " ms" << endl;
+  cout << "fj: " << fj_tm.duration() << " ms" << endl;
 
   return 0;
 }

@@ -1,11 +1,10 @@
 #include <iostream>
-#include <iomanip>
-#include <list>
+#include <vector>
 #include <cmath>
 #include <limits>
 
-#ifdef __cluster_time
-#include "Timer.h"
+#ifdef __cluster_debug
+#include <iomanip>
 #endif
 
 namespace clustering {
@@ -14,10 +13,6 @@ namespace clustering {
 // ******************************************************************
 
 template<typename T> inline T sq(T x) { return x*x; }
-
-#if __cplusplus == 199711L
-template<class ForwardIt> inline ForwardIt next(ForwardIt it) { return ++it; }
-#endif
 
 // functions to get variables from particle
 // ******************************************************************
@@ -71,7 +66,7 @@ template<algorithm alg> int p4<alg>::num = 0;
 // clustering function
 // ******************************************************************
 template<algorithm alg, class InputContainer>
-std::list<typename InputContainer::value_type>
+std::vector<typename InputContainer::value_type>
 cluster(const InputContainer& pp, double R)
 {
   // input particle type
@@ -110,7 +105,8 @@ cluster(const InputContainer& pp, double R)
   #endif
   
   // output list of jets with constituents
-  std::list<in_type> jets;
+  std::vector<in_type> jets;
+  jets.reserve(n/5+1);
 
   // perform clustering iterations until no more particles left
   while (n_ok) {
@@ -172,15 +168,14 @@ cluster(const InputContainer& pp, double R)
       }
 
     } else {
+      const p4<alg>& p = particles[i1];
+    
       // identify as jet
-      jets.push_back( in_type(
-        particles[i1].px, particles[i1].py,
-        particles[i1].pz, particles[i1].E
-      ) );
+      jets.push_back( in_type( p.px, p.py, p.pz, p.E ) );
 
       // print clustering step
       #ifdef __cluster_debug
-      std::cout << std::setw(3) << particles[i1].id
+      std::cout << std::setw(3) << p.id
                 << " is a Jet | d = " << dist << std::endl;
       #endif
 
@@ -195,11 +190,6 @@ cluster(const InputContainer& pp, double R)
   std::cout << std::endl;
   #endif
   
-  #ifdef __cluster_time
-  tm.stop();
-  std::cout << "Clustering time: " << tm.duration() << " ms\n" << std::endl;
-  #endif
-
   return jets;
 }
 
