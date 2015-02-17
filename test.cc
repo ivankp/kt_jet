@@ -15,9 +15,10 @@ istream& operator>>(istream &in, list<TLorentzVector>& p) {
 }
 
 namespace clustering {
-  template<> inline double __pt (const TLorentzVector& p) { return p.Pt(); }
-  template<> inline double __rap(const TLorentzVector& p) { return p.Rapidity(); }
-  template<> inline double __phi(const TLorentzVector& p) { return p.Phi(); }
+  template<> inline double __px (const TLorentzVector& p) { return p.Px(); }
+  template<> inline double __py (const TLorentzVector& p) { return p.Py(); }
+  template<> inline double __pz (const TLorentzVector& p) { return p.Pz(); }
+  template<> inline double __E  (const TLorentzVector& p) { return p.E (); }
 }
 
 int main()
@@ -25,8 +26,8 @@ int main()
   list<TLorentzVector> particles;
   while ( cin >> particles );
 
-  list<TLorentzVector> jets
-    = clustering::cluster<clustering::antikt_alg>(particles,0.6);
+  list<TLorentzVector> jets = clustering::cluster<clustering::kt_alg>(
+    particles.begin(),particles.end(),0.6);
 
   for (list<TLorentzVector>::iterator it=jets.begin(),
        end=jets.end(); it!=end; ++it) cout << it->Pt() << endl;
