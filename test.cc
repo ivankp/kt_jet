@@ -20,46 +20,46 @@ istream& operator>>(istream &in, vector<fjcore::PseudoJet>& p) {
 
 typedef vector<fjcore::PseudoJet>::const_iterator iter_t;
 
-int main()
+int main(int argc, char **argv)
 {
   const double R = 0.6;
-  
+
   // Read input
   // ****************************************************************
 
   vector<fjcore::PseudoJet> particles;
   while ( cin >> particles );
-  
+
   // pgJet
   // ****************************************************************
 
   Timer pg_tm;
   pg_tm.start();
-  
+
   const vector<fjcore::PseudoJet> pg_jets = fjcore::sorted_by_pt(
     clustering::cluster<clustering::antikt_alg>(particles, R)
   );
-    
+
   pg_tm.stop();
 
   // FastJet
   // ****************************************************************
-  
+
   Timer fj_tm;
   fj_tm.start();
-  
+
   fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, R);
   fjcore::ClusterSequence seq(particles, jet_def);
   const vector<fjcore::PseudoJet> fj_jets = fjcore::sorted_by_pt( seq.inclusive_jets() );
-  
+
   fj_tm.stop();
-  
+
   // Compare
   // ****************************************************************
 
   const size_t nfj = fj_jets.size(), npg = pg_jets.size();
   bool ok = (nfj==npg);
-  
+
   if (ok) {
     for (size_t i=0;i<nfj;++i)
       if ( fj_jets[i].pt() != pg_jets[i].pt() ) {
@@ -67,7 +67,7 @@ int main()
         break;
       }
   }
-  
+
   if (!ok) {
     cout << fixed << setprecision(8);
     for (size_t i=0,n=max(nfj,npg);i<n;++i) {

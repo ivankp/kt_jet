@@ -72,13 +72,13 @@ cluster(const InputContainer& pp, double R)
   // input particle type
   typedef typename InputContainer::value_type pp_type;
   typedef typename InputContainer::const_iterator pp_iter;
-  
+
   const size_t n = pp.size();
   size_t n_ok = n;
   p4<alg> particles[n]; // particles
   bool ok[n];           // particle exists
   double dij[n][n];     // cache of pairwise distances
-  
+
   // read input particles
   for (pp_iter it=pp.begin(), end=pp.end(); it!=end; ++it) {
     static size_t i=0;
@@ -86,7 +86,7 @@ cluster(const InputContainer& pp, double R)
     ok[i] = true;
     ++i;
   }
-  
+
   // cache pairwise distances
   for (size_t i=0, ni=n-1; i<ni; ++i)
     for (size_t j=i+1; j<n; ++j)
@@ -97,7 +97,7 @@ cluster(const InputContainer& pp, double R)
     std::cout << particles[i].id << ": " << particles[i].d << std::endl;
   std::cout << std::endl;
   #endif
-  
+
   // output list of jets with constituents
   std::vector<pp_type> jets;
   jets.reserve(n/10+1);
@@ -108,7 +108,7 @@ cluster(const InputContainer& pp, double R)
 
     double dist = std::numeric_limits<double>::max();
     bool merged = false;
-    
+
     // find smallest single distance
     for (size_t i=0; i<n; ++i) {
       if (!ok[i]) continue;
@@ -124,7 +124,7 @@ cluster(const InputContainer& pp, double R)
       if (!ok[i]) continue;
       for (size_t j=i+1; j<n; ++j) {
         if (!ok[j]) continue;
-        
+
         double d = dij[i][j];
         if (d < dist) {
           dist = d;
@@ -134,11 +134,11 @@ cluster(const InputContainer& pp, double R)
         }
       }
     }
-    
+
     if (merged) {
       // merge particles
       p4<alg> p( particles[i1] + particles[i2] );
-      
+
       // print clustering step
       #ifdef __cluster_debug
       std::cout << std::setw(3) << p.id << ": merged "
@@ -150,7 +150,7 @@ cluster(const InputContainer& pp, double R)
       // "remove" merged particles
       particles[i1] = p;
       ok[i2] = false;
-      
+
       // cache new pairwise distances
       for (size_t i=0; i<i1; ++i) {
         if (!ok[i]) continue;
@@ -163,7 +163,7 @@ cluster(const InputContainer& pp, double R)
 
     } else {
       const p4<alg>& p = particles[i1];
-    
+
       // identify as jet
       jets.push_back( pp_type( p.px, p.py, p.pz, p.E ) );
 
@@ -176,14 +176,14 @@ cluster(const InputContainer& pp, double R)
       // "remove"
       ok[i1] = false;
     }
-    
+
     --n_ok;
   } // end while
 
   #ifdef __cluster_debug
   std::cout << std::endl;
   #endif
-  
+
   return jets;
 }
 
