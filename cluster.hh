@@ -78,6 +78,7 @@ cluster(const InputContainer& pp, double R)
   p4<alg> particles[n]; // particles
   bool ok[n];           // particle exists
   double dij[n][n];     // cache of pairwise distances
+  // double dij[n*(n+1)/2]; // cache of pairwise distances
 
   // read input particles
   for (pp_iter it=pp.begin(), end=pp.end(); it!=end; ++it) {
@@ -88,9 +89,10 @@ cluster(const InputContainer& pp, double R)
   }
 
   // cache pairwise distances
-  for (size_t i=0, ni=n-1; i<ni; ++i)
-    for (size_t j=i+1; j<n; ++j)
+  for (size_t i=1, k=0; i<n; ++i)
+    for (size_t j=0; j<i; ++j, ++k)
       dij[i][j] = particles[i].dij( particles[j] );
+      // dij[k] = particles[i].dij( particles[j] );
 
   #ifdef __cluster_debug
   for (size_t i=0; i<n; ++i)
@@ -120,12 +122,19 @@ cluster(const InputContainer& pp, double R)
     }
 
     // find closest pair
-    for (size_t i=0, ni=n-1; i<ni; ++i) {
-      if (!ok[i]) continue;
-      for (size_t j=i+1; j<n; ++j) {
+    for (size_t i=1, k=0; i<n; ++i) {
+      if (!ok[i]) {
+        k += i;
+        continue;
+      }
+      for (size_t j=0; j<i; ++j, ++k) {
         if (!ok[j]) continue;
 
         double d = dij[i][j];
+        // double d = dij[k];
+
+        // std::cout << i*(i-1)/2+j << " " << k << ' ' << d << std::endl;
+
         if (d < dist) {
           dist = d;
           i1 = i;
@@ -154,11 +163,15 @@ cluster(const InputContainer& pp, double R)
       // cache new pairwise distances
       for (size_t i=0; i<i1; ++i) {
         if (!ok[i]) continue;
-        dij[i][i1] = particles[i].dij( particles[i1] );
+        dij[i1][i] = particles[i].dij( particles[i1] );
+        // dij[i1*(i1-1)/2+i] = particles[i].dij( particles[i1] );
+        // std::cout << i1 << i << std::endl;
       }
       for (size_t i=i1+1; i<n; ++i) {
         if (!ok[i]) continue;
-        dij[i1][i] = particles[i].dij( particles[i1] );
+        dij[i][i1] = particles[i].dij( particles[i1] );
+        // dij[i*(i-1)/2+i1] = particles[i].dij( particles[i1] );
+        // std::cout << i << i1 << std::endl;
       }
 
     } else {

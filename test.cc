@@ -69,12 +69,13 @@ int main(int argc, char **argv)
   }
 
   if (!ok) {
+    cout << setw(15) << "fastjet" << setw(15) << "test" << endl;
     cout << fixed << setprecision(8);
     for (size_t i=0,n=max(nfj,npg);i<n;++i) {
-      cout << setw(12);
+      cout << setw(15);
       if (i<nfj) cout << fj_jets[i].pt();
       else cout << ' ';
-      cout << setw(12);
+      cout << setw(15);
       if (i<npg) cout << pg_jets[i].pt();
       else cout << ' ';
       cout << endl;
