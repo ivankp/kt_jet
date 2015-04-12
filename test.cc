@@ -9,6 +9,8 @@
 // #define __cluster_debug
 #include "cluster.hh"
 
+// #include <cstdio>
+
 using namespace std;
 
 istream& operator>>(istream &in, vector<fjcore::PseudoJet>& p) {
@@ -86,6 +88,9 @@ int main(int argc, char **argv)
 
   cout << "pg: " << pg_tm.duration() << " ms" << endl;
   cout << "fj: " << fj_tm.duration() << " ms" << endl;
+
+  // for (size_t i=0;i<nfj;++i)
+    // printf("%.8e\n",fj_jets[i].pt());
 
   return 0;
 }

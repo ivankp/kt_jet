@@ -4,6 +4,7 @@
 #include <limits>
 
 #ifdef __cluster_debug
+#include <cstdio>
 #include <iomanip>
 #endif
 
@@ -87,16 +88,16 @@ cluster(const InputContainer& pp, double R)
     ++i;
   }
 
-  // cache pairwise distances
-  for (size_t i=0, ni=n-1; i<ni; ++i)
-    for (size_t j=i+1; j<n; ++j)
-      dij[i][j] = particles[i].dij( particles[j] );
-
   #ifdef __cluster_debug
   for (size_t i=0; i<n; ++i)
     std::cout << particles[i].id << ": " << particles[i].d << std::endl;
   std::cout << std::endl;
   #endif
+
+  // cache pairwise distances
+  for (size_t i=0, ni=n-1; i<ni; ++i)
+    for (size_t j=i+1; j<n; ++j)
+      dij[i][j] = particles[i].dij( particles[j] );
 
   // output list of jets with constituents
   std::vector<pp_type> jets;
@@ -141,10 +142,8 @@ cluster(const InputContainer& pp, double R)
 
       // print clustering step
       #ifdef __cluster_debug
-      std::cout << std::setw(3) << p.id << ": merged "
-                << std::setw(3) << particles[i1].id << " & "
-                << std::setw(3) << particles[i2].id
-                << " | d = " << dist << std::endl;
+      printf("%3d & %3d | d = %.5e\n",
+        particles[i1].id, particles[i2].id, dist/(R*R));
       #endif
 
       // "remove" merged particles
@@ -169,8 +168,7 @@ cluster(const InputContainer& pp, double R)
 
       // print clustering step
       #ifdef __cluster_debug
-      std::cout << std::setw(3) << p.id
-                << " is a Jet | d = " << dist << std::endl;
+      printf("%3d is a Jet | d = %.5e\n",p.id,dist/(R*R));
       #endif
 
       // "remove"
